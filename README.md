@@ -2,7 +2,11 @@
 
 This repository contains instructions and utilities that I used to create a version of [Dive into Deep Learning](https://d2l.ai/) in EPUB format.
 
-The resulting file can be downloaded from [here](https://library.bz/main/uploads/9B9E13BF1AA85964CD936A4CF99AF51C).
+The resulting file can be downloaded from:
+
+```bash
+https : // library.bz / main / uploads /  9B9E13BF1AA85964CD936A4CF99AF51C
+```
 
 ## Prerequisites
 
