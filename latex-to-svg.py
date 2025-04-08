@@ -5,6 +5,7 @@ LaTeX to SVG Converter for EPUB2/Kindle - With Manifest Update
 """
 
 import argparse
+import glob
 import os
 import re
 import sys
@@ -226,7 +227,7 @@ def process_xhtml_file(
 
     if not matches:
         print(f"No LaTeX expressions found in {xhtml_path}")
-        return
+        return []
 
     print(f"Found {len(matches)} LaTeX expressions in {xhtml_path}")
 
@@ -283,17 +284,46 @@ def process_xhtml_file(
     print(f"Successfully processed {xhtml_path}")
     print(f"Images saved to {images_dir}")
 
+    return generated_images
+
+
+def process_directory(
+    xhtml_dir, images_dir, manifest_path=None, content_root=None, image_prefix="math_"
+):
+    """Process all XHTML files in a directory"""
+    # Find all XHTML files in the directory
+    xhtml_files = []
+    for ext in ["*.xhtml", "*.html", "*.htm"]:
+        xhtml_files.extend(glob.glob(os.path.join(xhtml_dir, ext)))
+
+    if not xhtml_files:
+        print(f"No XHTML files found in {xhtml_dir}")
+        return
+
+    print(f"Found {len(xhtml_files)} XHTML files to process")
+
+    # Process each file
+    all_generated_images = []
+    for xhtml_path in tqdm(xhtml_files, desc="Processing files"):
+        print(f"\nProcessing {os.path.basename(xhtml_path)}...")
+        generated_images = process_xhtml_file(
+            xhtml_path, images_dir, None, content_root, image_prefix
+        )
+        all_generated_images.extend(generated_images)
+
     # Update manifest if path was provided
-    if manifest_path and generated_images and content_root:
-        print(f"Updating manifest with {len(generated_images)} images")
-        update_manifest(manifest_path, generated_images, content_root)
+    if manifest_path and all_generated_images and content_root:
+        print(f"\nUpdating manifest with {len(all_generated_images)} images")
+        update_manifest(manifest_path, all_generated_images, content_root)
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Convert LaTeX expressions in XHTML to SVG images for EPUB2/Kindle"
+        description="Convert LaTeX expressions in XHTML files to SVG images for EPUB2/Kindle"
     )
-    parser.add_argument("xhtml_path", help="Path to the XHTML file")
+    parser.add_argument(
+        "xhtml_dir", help="Path to the directory containing XHTML files"
+    )
     parser.add_argument(
         "images_dir", help="Path to the directory where images will be saved"
     )
@@ -309,7 +339,7 @@ def main():
     args = parser.parse_args()
 
     # Convert paths to absolute paths
-    xhtml_path = os.path.abspath(args.xhtml_path)
+    xhtml_dir = os.path.abspath(args.xhtml_dir)
     images_dir = os.path.abspath(args.images_dir)
     manifest_path = os.path.abspath(args.manifest) if args.manifest else None
 
@@ -339,8 +369,8 @@ def main():
 
     # Check LaTeX installation before proceeding
     if check_latex_installation():
-        process_xhtml_file(
-            xhtml_path, images_dir, manifest_path, content_root, args.prefix
+        process_directory(
+            xhtml_dir, images_dir, manifest_path, content_root, args.prefix
         )
     else:
         print("\nAlternative: Try using a non-LaTeX renderer")
@@ -353,8 +383,8 @@ def main():
                     "mathtext.fontset": "stix",
                 }
             )
-            process_xhtml_file(
-                xhtml_path, images_dir, manifest_path, content_root, args.prefix
+            process_directory(
+                xhtml_dir, images_dir, manifest_path, content_root, args.prefix
             )
         else:
             print("Exiting. Please check your LaTeX installation.")
