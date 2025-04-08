@@ -8,14 +8,18 @@ import argparse
 import glob
 import os
 import re
-import sys
 import uuid
+import warnings
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import matplotlib
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+
+# Add this near the top of your script, after the imports
+# Filter out specific matplotlib warnings
+warnings.filterwarnings("ignore", category=UserWarning, message="Tight layout.*")
 
 # Set LaTeX path
 os.environ["PATH"] = f"{os.path.expanduser('~/bin')}:{os.environ.get('PATH', '')}"
@@ -77,6 +81,11 @@ def preprocess_latex(latex):
     latex = latex.replace("&lt;", "<")
     latex = latex.replace("&gt;", ">")
 
+    # Fix split environment - it needs to be inside an equation environment
+    if latex.startswith("\\begin{split}") and latex.endswith("\\end{split}"):
+        latex = latex.replace("\\begin{split}", "")
+        latex = latex.replace("\\end{split}", "")
+
     # Fix nested environments that cause errors
     if "\\begin{split}\\begin{aligned}" in latex:
         latex = latex.replace("\\begin{split}\\begin{aligned}", "\\begin{aligned}")
@@ -87,6 +96,10 @@ def preprocess_latex(latex):
         if "\\begin{align" in latex or "\\begin{equation" in latex:
             latex = latex.replace("\\begin{split}", "")
             latex = latex.replace("\\end{split}", "")
+        else:
+            # If split is not nested in another math environment, replace it with aligned
+            latex = latex.replace("\\begin{split}", "\\begin{aligned}")
+            latex = latex.replace("\\end{split}", "\\end{aligned}")
 
     return latex
 
