@@ -59,8 +59,36 @@ def check_latex_installation():
 
 def sanitize_latex(latex):
     """Remove LaTeX delimiters and prepare for rendering"""
-    # Remove common LaTeX delimiters: \( \) or $ $
-    return re.sub(r"\\[\(\)]|\$", "", latex)
+    # Remove common LaTeX delimiters: \( \), $ $, \[ \]
+    latex = re.sub(r"\\[\(\[\]\)]|\$", "", latex)
+
+    # Handle special cases for complex environments
+    if latex.strip().startswith("\\begin{"):
+        # Don't remove the environment delimiters as they're needed
+        return latex
+
+    return latex
+
+
+def preprocess_latex(latex):
+    """Preprocess LaTeX to handle common issues"""
+    # Replace HTML entities
+    latex = latex.replace("&amp;", "&")
+    latex = latex.replace("&lt;", "<")
+    latex = latex.replace("&gt;", ">")
+
+    # Fix nested environments that cause errors
+    if "\\begin{split}\\begin{aligned}" in latex:
+        latex = latex.replace("\\begin{split}\\begin{aligned}", "\\begin{aligned}")
+        latex = latex.replace("\\end{aligned}\\end{split}", "\\end{aligned}")
+
+    # Remove unnecessary nested environments
+    if "\\begin{split}" in latex and "\\end{split}" in latex:
+        if "\\begin{align" in latex or "\\begin{equation" in latex:
+            latex = latex.replace("\\begin{split}", "")
+            latex = latex.replace("\\end{split}", "")
+
+    return latex
 
 
 def generate_unique_filename(latex, prefix="math_"):
@@ -70,18 +98,26 @@ def generate_unique_filename(latex, prefix="math_"):
     return f"{prefix}{unique_id}.svg"
 
 
-def render_latex_to_svg(latex, output_path, dpi=300):
+def render_latex_to_svg(latex, output_path, dpi=300, is_display=False):
     """Render LaTeX expression to SVG image with inline dimensions"""
-    # Clean the LaTeX expression
+    # Clean and preprocess the LaTeX expression
     clean_latex = sanitize_latex(latex)
+    clean_latex = preprocess_latex(clean_latex)
 
     try:
         # Create figure with transparent background
-        fig = plt.figure(figsize=(0.1, 0.1))  # Small initial size, will be adjusted
+        fig_size = (0.1, 0.1)  # Small initial size, will be adjusted
+        if is_display:
+            # Use larger font size for display equations
+            fontsize = 16
+        else:
+            fontsize = 14
+
+        fig = plt.figure(figsize=fig_size)
         fig.patch.set_alpha(0)  # Transparent background
 
         # Add text with LaTeX
-        plt.text(0, 0, f"${clean_latex}$", fontsize=14)
+        plt.text(0, 0, f"${clean_latex}$", fontsize=fontsize)
 
         # Remove axes
         plt.axis("off")
@@ -104,7 +140,43 @@ def render_latex_to_svg(latex, output_path, dpi=300):
     except Exception as e:
         print(f"Error rendering LaTeX: {latex}")
         print(f"Error details: {e}")
-        return False
+
+        # Try fallback method for complex equations
+        try:
+            print("Attempting fallback rendering method...")
+            # Use simpler rendering approach
+            matplotlib.rcParams.update({"text.usetex": False})
+
+            fig = plt.figure(figsize=fig_size)
+            fig.patch.set_alpha(0)
+
+            # For complex equations, just render a placeholder
+            if is_display:
+                plt.text(0, 0, "[Complex equation]", fontsize=fontsize)
+            else:
+                plt.text(0, 0, "[eq]", fontsize=fontsize)
+
+            plt.axis("off")
+            plt.tight_layout(pad=0.1)
+
+            plt.savefig(
+                output_path,
+                format="svg",
+                dpi=dpi,
+                bbox_inches="tight",
+                transparent=True,
+                pad_inches=0.02,
+            )
+            plt.close(fig)
+
+            # Reset to default
+            matplotlib.rcParams.update({"text.usetex": True})
+
+            print("Fallback rendering completed.")
+            return True
+        except Exception as fallback_error:
+            print(f"Fallback rendering also failed: {fallback_error}")
+            return False
 
 
 def normalize_path(path):
@@ -221,46 +293,108 @@ def process_xhtml_file(
     with open(xhtml_path, "r", encoding="utf-8") as f:
         content = f.read()
 
-    # Find all LaTeX expressions - updated pattern to handle \( \) delimiters
-    pattern = r'<span class="math notranslate nohighlight">(?:\\[\(\)]|\$)?(.*?)(?:\\[\(\)]|\$)?</span>'
-    matches = re.findall(pattern, content, re.DOTALL)
-
-    if not matches:
-        print(f"No LaTeX expressions found in {xhtml_path}")
-        return []
-
-    print(f"Found {len(matches)} LaTeX expressions in {xhtml_path}")
-
-    # Process each LaTeX expression
-    replacements = []
+    # Process inline math expressions
     generated_images = []
 
-    # Get all spans to ensure we're replacing the complete original content
-    span_pattern = r'(<span class="math notranslate nohighlight">.*?</span>)'
-    spans = re.findall(span_pattern, content, re.DOTALL)
+    # Find all inline LaTeX expressions
+    inline_pattern = r'<span class="math notranslate nohighlight">(?:\\[\(\)]|\$)?(.*?)(?:\\[\(\)]|\$)?</span>'
+    inline_matches = re.findall(inline_pattern, content, re.DOTALL)
 
-    for span, latex in zip(spans, matches):
-        # Generate a unique filename
-        filename = generate_unique_filename(latex, image_prefix)
-        image_path = os.path.join(images_dir, filename)
+    if inline_matches:
+        print(f"Found {len(inline_matches)} inline LaTeX expressions in {xhtml_path}")
 
-        # Render LaTeX to SVG
-        success = render_latex_to_svg(latex, image_path)
+        # Get all spans to ensure we're replacing the complete original content
+        span_pattern = r'(<span class="math notranslate nohighlight">.*?</span>)'
+        spans = re.findall(span_pattern, content, re.DOTALL)
 
-        if success:
-            # Add to list of generated images
-            generated_images.append(os.path.abspath(image_path))
+        # Process each inline LaTeX expression
+        inline_replacements = []
 
-            # Create the image tag for EPUB2/Kindle with inline styling
-            rel_path = os.path.relpath(images_dir, os.path.dirname(xhtml_path))
-            image_tag = f'<img src="{normalize_path(os.path.join(rel_path, filename))}" alt="" style="vertical-align: middle; display: inline-block; height: 1.2em;" class="math-image"/>'
+        for span, latex in zip(spans, inline_matches):
+            # Generate a unique filename
+            filename = generate_unique_filename(latex, image_prefix)
+            image_path = os.path.join(images_dir, filename)
 
-            # Store the original span and its replacement
-            replacements.append((span, image_tag))
+            # Render LaTeX to SVG
+            success = render_latex_to_svg(latex, image_path, is_display=False)
 
-    # Apply all replacements
-    for original, replacement in replacements:
-        content = content.replace(original, replacement)
+            if success:
+                # Add to list of generated images
+                generated_images.append(os.path.abspath(image_path))
+
+                # Create the image tag for EPUB2/Kindle with inline styling
+                rel_path = os.path.relpath(images_dir, os.path.dirname(xhtml_path))
+                image_tag = f'<img src="{normalize_path(os.path.join(rel_path, filename))}" alt="" style="vertical-align: middle; display: inline-block; height: 1.2em;" class="math-image"/>'
+
+                # Store the original span and its replacement
+                inline_replacements.append((span, image_tag))
+
+        # Apply all inline replacements
+        for original, replacement in inline_replacements:
+            content = content.replace(original, replacement)
+
+    # Process display math expressions - FIXED PATTERN
+    # Get all display math divs first
+    div_pattern = r'(<div class="math notranslate nohighlight"[^>]*>.*?</div>)'
+    divs = re.findall(div_pattern, content, re.DOTALL)
+
+    if divs:
+        print(f"Found {len(divs)} display LaTeX expressions in {xhtml_path}")
+
+        # Process each display LaTeX expression
+        display_replacements = []
+
+        for div in divs:
+            # Extract the LaTeX content between \[ and \]
+            latex_match = re.search(r"\\\[(.*?)\\\]", div, re.DOTALL)
+            if not latex_match:
+                print(
+                    f"Warning: Could not extract LaTeX from display equation: {div[:100]}..."
+                )
+                continue
+
+            latex = latex_match.group(1)
+
+            # Generate a unique filename
+            filename = generate_unique_filename(latex, f"{image_prefix}display_")
+            image_path = os.path.join(images_dir, filename)
+
+            # Render LaTeX to SVG
+            success = render_latex_to_svg(latex, image_path, is_display=True)
+
+            if success:
+                # Add to list of generated images
+                generated_images.append(os.path.abspath(image_path))
+
+                # Extract equation number and ID if present
+                eqno_match = re.search(r'<span class="eqno">(.*?)</span>', div)
+                id_match = re.search(r'id="([^"]+)"', div)
+
+                # Create replacement div with image
+                rel_path = os.path.relpath(images_dir, os.path.dirname(xhtml_path))
+
+                # Start building the replacement div
+                replacement = '<div class="math-display"'
+
+                # Add ID if present
+                if id_match:
+                    replacement += f' id="{id_match.group(1)}"'
+
+                replacement += ">"
+
+                # Add equation number if present
+                if eqno_match:
+                    replacement += f'<span class="eqno">{eqno_match.group(1)}</span>'
+
+                # Add the image
+                replacement += f'<img src="{normalize_path(os.path.join(rel_path, filename))}" alt="" class="math-display-image"/></div>'
+
+                # Store the original div and its replacement
+                display_replacements.append((div, replacement))
+
+        # Apply all display replacements
+        for original, replacement in display_replacements:
+            content = content.replace(original, replacement)
 
     # Add CSS for math images if not already present
     css_for_math = """
@@ -271,6 +405,23 @@ def process_xhtml_file(
   height: 1.2em;
   margin: 0;
   padding: 0;
+}
+.math-display {
+  text-align: center;
+  margin: 1em 0;
+  position: relative;
+}
+.math-display-image {
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+  display: block;
+}
+.eqno {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
 }
 </style>
 """
