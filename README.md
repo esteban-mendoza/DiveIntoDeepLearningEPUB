@@ -5,7 +5,7 @@ This repository contains instructions and utilities that I used to create a vers
 The resulting file can be downloaded from:
 
 ```bash
-https://library.bz/main/uploads/9B9E13BF1AA85964CD936A4CF99AF51C
+https://library.bz/main/uploads/23B34638B780F8D4BA87220FC82372CC
 ```
 
 ## Prerequisites
