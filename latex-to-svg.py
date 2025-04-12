@@ -409,37 +409,6 @@ def process_xhtml_file(
         for original, replacement in display_replacements:
             content = content.replace(original, replacement)
 
-    # Add CSS for math images if not already present
-    css_for_math = """
-<style type="text/css">
-.math-image {
-  vertical-align: middle;
-  display: inline-block;
-  height: 1.2em;
-  margin: 0;
-  padding: 0;
-}
-.math-display {
-  text-align: center;
-  margin: 1em 0;
-  position: relative;
-}
-.math-display-image {
-  max-width: 100%;
-  height: auto;
-  margin: 0 auto;
-  display: block;
-}
-.eqno {
-  position: absolute;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-}
-</style>
-"""
-    if "<head>" in content and css_for_math not in content:
-        content = content.replace("</head>", f"{css_for_math}</head>")
 
     # Write the modified content back to the file
     with open(xhtml_path, "w", encoding="utf-8") as f:
