@@ -40,8 +40,102 @@ https://library.bz/main/uploads/9B9E13BF1AA85964CD936A4CF99AF51C
     python3 latex-to-svg.py -h
     ````
 
-5. Make any modifications to the HTML files as needed. For example, I removed all links to the discussions and links to open the notebooks in Google Colab or AWS SageMaker. I also tweaked the CSS styles to have better code formatting.
-6. Run the following command to create the resulting EPUB file:
+5. Make any modifications to the HTML files as needed. For example, I removed all links to the discussions and links to open the notebooks in Google Colab or AWS SageMaker. 
+
+   I also tweaked the CSS styles to have better code and Math formatting by adding this to the CSS stylesheet:
+   ````css
+    /* Math */
+    .math-image {
+      vertical-align: middle;
+      display: inline-block;
+      height: 1.2em;
+      margin: 0;
+      padding: 0;
+    }
+    .math-display {
+      text-align: center;
+      margin: 1em 0;
+      position: relative;
+    }
+    .math-display-image {
+      max-width: 100%;
+      height: auto;
+      margin: 0 auto;
+      display: block;
+    }
+    .eqno {
+      position: absolute;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+    /* Code blocks styling for Kindle with reduced vertical spacing */
+    .highlight-python, .highlight-bash, .highlight-default, .output {
+      margin: 0; /* Remove default margins */
+      padding: 0; /* Remove default padding */
+    }
+    
+    .highlight {
+      font-size: 80%; /* Reduce font size to 80% of normal text */
+      line-height: 1.2; /* Tighter line spacing */
+      margin: 0.2em 0; /* Minimal vertical margins */
+      padding: 0.3em 0.5em; /* Reduced padding, especially vertical */
+      background-color: #f5f5f5; /* Light gray background */
+      border: 1px solid #ddd; /* Light border */
+      overflow-x: auto; /* Allow horizontal scrolling if needed */
+      white-space: pre-wrap; /* Allow wrapping of long lines */
+      font-family: monospace; /* Use monospace font */
+    }
+    
+    /* Target the container divs directly */
+    div.highlight-python, div.highlight-bash, div.output {
+      margin-top: 0.3em; /* Small top margin */
+      margin-bottom: 0.3em; /* Small bottom margin */
+    }
+    
+    /* Make output blocks slightly different */
+    .output .highlight {
+      background-color: #f8f8f8; /* Slightly different background for output */
+      border-top: none; /* Remove top border if it follows code */
+      padding-top: 0.2em; /* Less padding at top */
+      padding-bottom: 0.2em; /* Less padding at bottom */
+      font-style: italic; /* Make output italic to differentiate */
+      margin-top: 0; /* No margin between code and its output */
+    }
+    
+    /* Adjust span colors for better contrast on e-ink */
+    .highlight .n { color: #000000; } /* Name - black */
+    .highlight .o { font-weight: bold; } /* Operator - bold */
+    .highlight .mi, .highlight .mf { color: #333333; } /* Numbers - dark gray */
+    .highlight .s { font-style: italic; } /* Strings - italic */
+    .highlight .k, .highlight .kn { font-weight: bold; } /* Keywords - bold */
+    .highlight .c, .highlight .c1 { font-style: italic; color: #555555; } /* Comments - italic, gray */
+    
+    /* Make pre elements inside highlights fit better */
+    .highlight pre {
+      margin: 0;
+      padding: 0;
+      font-size: inherit;
+      line-height: inherit;
+    }
+    
+    /* Adjust spacing between code and output blocks */
+    .highlight + .output {
+      margin-top: -0.3em; /* Negative margin to pull output closer to code */
+    }
+    
+    /* Ensure code blocks following paragraphs have appropriate spacing */
+    p + .highlight-python, p + .highlight-bash {
+      margin-top: 0.5em; /* Space after paragraph */
+    }
+    
+    /* Ensure paragraphs following code blocks have appropriate spacing */
+    .highlight-python + p, .highlight-bash + p, .output + p {
+      margin-top: 0.5em; /* Space before next paragraph */
+    }
+   ````
+ 
+7. Run the following command to create the resulting EPUB file:
 
     ````bash
     zip -rX "../dl2.epub" mimetype $(ls|xargs echo|sed 's/mimetype//g') -x \*.DS_Store -x \*.git\*
