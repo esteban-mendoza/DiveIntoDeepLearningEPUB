@@ -15,7 +15,14 @@ https://library.bz/main/uploads/9B9E13BF1AA85964CD936A4CF99AF51C
 
 ## Instructions
 
-1. Use [WebToEpub](https://github.com/dteviot/WebToEpub) to convert the website to EPUB format. In this version we used the flag `.mdl-tabs__panel:not(.is-active)` just to include the `PyTorch` portions of the book.
+1. Use [WebToEpub](https://github.com/dteviot/WebToEpub) to convert the website to EPUB format. In this version we used the flag 
+
+    ````bash
+    .mdl-tabs__panel:not(.is-active), .d2l-tabs, button
+    ````
+
+   just to include the `PyTorch` portions of the book and remove some annoying links.
+
 2. Rename the given EPUB file to ZIP format and extract it. This will contain all the HTML files and images of the EPUB.
 3. Create a virtual environment and install dependencies.
 
