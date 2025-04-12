@@ -23,8 +23,10 @@ https://library.bz/main/uploads/23B34638B780F8D4BA87220FC82372CC
 
    just to include the `PyTorch` portions of the book and remove some annoying links.
 
-2. Rename the given EPUB file to ZIP format and extract it. This will contain all the HTML files and images of the EPUB.
-3. Create a virtual environment and install dependencies.
+   We also had to follow instructions in [this issue](https://github.com/dteviot/WebToEpub/issues/1798#issuecomment-2799026548) to retain useful links to previous and next chapters.
+
+3. Rename the given EPUB file to ZIP format and extract it. This will contain all the HTML files and images of the EPUB.
+4. Create a virtual environment and install dependencies.
 
     ````bash
     python3 -m venv venv
@@ -32,7 +34,7 @@ https://library.bz/main/uploads/23B34638B780F8D4BA87220FC82372CC
     pip install -r requirements.txt
     ````
 
-4. Execute `latex-to-svg.py`. This script will convert all the LaTeX equations in the HTML files to SVG format. The script will look for all the HTML files in the `d2l` folder and convert any LaTeX equations it finds. The resulting SVG files will be saved in the directory specified by the user.
+5. Execute `latex-to-svg.py`. This script will convert all the LaTeX equations in the HTML files to SVG format. The script will look for all the HTML files in the `d2l` folder and convert any LaTeX equations it finds. The resulting SVG files will be saved in the directory specified by the user.
 
     Execute this command to see the necessary arguments for the script:
 
@@ -40,7 +42,7 @@ https://library.bz/main/uploads/23B34638B780F8D4BA87220FC82372CC
     python3 latex-to-svg.py -h
     ````
 
-5. Make any modifications to the HTML files as needed. For example, I removed all links to the discussions and links to open the notebooks in Google Colab or AWS SageMaker. 
+6. Make any modifications to the HTML files as needed. For example, I removed all links to the discussions and links to open the notebooks in Google Colab or AWS SageMaker. 
 
    I also tweaked the CSS styles to have better code and Math formatting by adding this to the CSS stylesheet:
    ````css
