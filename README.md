@@ -2,7 +2,7 @@
 
 This repository contains instructions and utilities that I used to create a version of [Dive into Deep Learning](https://d2l.ai/) in EPUB format.
 
-The resulting file can be downloaded from [this release](https://github.com/esteban-mendoza/DiveIntoDeepLearningEPUB/releases/tag/1.0.0).
+The resulting file can be downloaded from [the "releases" section](https://github.com/esteban-mendoza/DiveIntoDeepLearningEPUB/releases).
 
 ## Prerequisites
 
