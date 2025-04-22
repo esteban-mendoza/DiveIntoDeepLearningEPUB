@@ -11,7 +11,7 @@ The resulting file can be downloaded from [this release](https://github.com/este
 
 ## Instructions
 
-1. Use [WebToEpub](https://github.com/dteviot/WebToEpub) to convert the website to EPUB format. In this version we used the flag 
+1. Use [WebToEpub](https://github.com/dteviot/WebToEpub) to convert the website to EPUB format. In this version we used `div.section` to select the body of each chapter, and the following flags 
 
     ````bash
     .mdl-tabs__panel:not(.is-active), .d2l-tabs, button
